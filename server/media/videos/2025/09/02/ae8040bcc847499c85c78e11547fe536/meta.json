@@ -1,0 +1,22 @@
+{
+    "id": "ae8040bcc847499c85c78e11547fe536",
+    "original_name": "2025-09-01 22-10-58.mp4",
+    "ext": ".mp4",
+    "filter": "gray",
+    "created_at": "2025-09-02T01:33:49.967031",
+    "paths": {
+        "base": "/home/iagora/SD-Flask/server/media/videos/2025/09/02/ae8040bcc847499c85c78e11547fe536",
+        "original": "/home/iagora/SD-Flask/server/media/videos/2025/09/02/ae8040bcc847499c85c78e11547fe536/original/video.mp4",
+        "processed": "/home/iagora/SD-Flask/server/media/videos/2025/09/02/ae8040bcc847499c85c78e11547fe536/processed/gray/video.mp4",
+        "thumb_jpg": "/home/iagora/SD-Flask/server/media/videos/2025/09/02/ae8040bcc847499c85c78e11547fe536/thumbs/frame_0001.jpg",
+        "preview_gif": "/home/iagora/SD-Flask/server/media/videos/2025/09/02/ae8040bcc847499c85c78e11547fe536/thumbs/preview.gif",
+        "meta_json": "/home/iagora/SD-Flask/server/media/videos/2025/09/02/ae8040bcc847499c85c78e11547fe536/meta.json"
+    },
+    "urls": {
+        "view": "http://127.0.0.1:5000/video/ae8040bcc847499c85c78e11547fe536",
+        "original": "http://127.0.0.1:5000/media/videos/*/*/*/ae8040bcc847499c85c78e11547fe536/original/video.mp4",
+        "processed": "http://127.0.0.1:5000/media/videos/*/*/*/ae8040bcc847499c85c78e11547fe536/processed/gray/video.mp4",
+        "thumb": "http://127.0.0.1:5000/media/videos/*/*/*/ae8040bcc847499c85c78e11547fe536/thumbs/frame_0001.jpg",
+        "gif": "http://127.0.0.1:5000/media/videos/*/*/*/ae8040bcc847499c85c78e11547fe536/thumbs/preview.gif"
+    }
+}
