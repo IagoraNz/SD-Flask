@@ -1,14 +1,14 @@
-cd client
 python3 -m venv .venv
 source .venv/bin/activate
-pip install --upgrade pip
-pip install requests
-python client.py
-
-cd server
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
 pip install -r requirements.txt
+cd client
+python3 client.py ou python client.py
+
+Em outro Terminal rode:
+source .venv/bin/activate
+cd server
+
+python3 app.py ou python app.py
+
 # (opcional) copie config.example.env para .env e ajuste caminhos/host/porta
 python app.py
