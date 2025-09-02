@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arara Videos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+        }
+
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 20px;
+            padding-top: 20px;
+            background-color: #6A9EDA;
+            text-align: center;
+        }
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            width: 100px;
+            height: 100px;
+        }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .video-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .thumbnail-container {
+            height: 160px;
+            overflow: hidden;
+            position: relative;
+        }
+        .thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .video-info {
+            padding: 10px;
+        }
+        .video-title {
+            margin: 0;
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .video-meta {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-container">
+            <img src="../static/img/image 8.png" alt="Logo" class="logo">
+            <h1>Arara Videos</h1>
+        </div>
+        
+        <h1>Historico de Videos</h1>
+    </div>
+    <div class="video-grid">
+        {% for video in videos %}
+        <div class="video-card">
+            <a href="{{ video['urls']['view'] }}">
+                <div class="thumbnail-container">
+                    <img src="{{ video['urls']['thumb'] }}" alt="{{ video['original_name'] }}" class="thumbnail">
+                </div>
+                <div class="video-info">
+                    <h2 class="video-title">{{ video['original_name'] }}</h2>
+                    <p class="video-meta">Filtro: {{ video['filter'] }}</p>
+                    <p class="video-meta">{{ video['created_at'] }}</p>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

@@ -5,7 +5,8 @@ from pathlib import Path
 from datetime import datetime, timezone
 from flask import (
     Flask, request, jsonify, send_from_directory,
-    abort, render_template_string, redirect, url_for
+    abort, render_template_string, redirect, url_for,
+    render_template
 )
 from dotenv import load_dotenv
 import cv2
@@ -200,6 +201,11 @@ def gallery():
     </html>
     """
     return render_template_string(html, videos=videos)
+    
+@app.route("/", methods=["GET"])
+def index():
+    videos = list_videos()
+    return render_template('index.html', videos=videos)
 
 @app.route("/media/<path:subpath>")
 def serve_media(subpath):
