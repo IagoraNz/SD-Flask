@@ -37,10 +37,10 @@ class VideoClientApp(tk.Tk):
 
         # IP e Porta
         ip_port_frame = tk.Frame(top_frame, bg="#a8d4f0", relief="solid", bd=1)
-        ip_port_frame.pack(side="left", padx=(0, 10))
+        ip_port_frame.pack(side="left", padx=(230, 10))
         
         tk.Label(ip_port_frame, text="IP:Porta", bg="#a8d4f0", 
-                font=("Poppins", 10)).pack(padx=10, pady=5)
+                font=("Poppins", 10, "bold")).pack(padx=10, pady=5)
         
         ip_entry_frame = tk.Frame(ip_port_frame, bg="#a8d4f0")
         ip_entry_frame.pack(padx=10, pady=(0, 10))
@@ -55,10 +55,10 @@ class VideoClientApp(tk.Tk):
 
         # Filtro
         filter_frame = tk.Frame(top_frame, bg="#a8d4f0", relief="solid", bd=1)
-        filter_frame.pack(side="right")
+        filter_frame.pack(side="right", padx=(0, 230))
         
         tk.Label(filter_frame, text="Selecionar Filtro", bg="#a8d4f0", 
-                font=("Poppins", 10)).pack(padx=10, pady=5)
+                font=("Poppins", 10, "bold")).pack(padx=10, pady=5)
         
         filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_name, 
                                    values=["gray", "blur", "edge", "sharpen"], width=15)
@@ -87,12 +87,12 @@ class VideoClientApp(tk.Tk):
         icon_canvas.create_polygon([30, 20, 20, 35, 40, 35], fill="#a0a0a0", outline="#a0a0a0")
 
         upload_label = tk.Label(upload_icon_frame, text="Procure um vídeo", 
-                               bg="#e8e8e8", font=("Poppins", 12))
+                               bg="#e8e8e8", font=("Poppins", 12, "bold"))
         upload_label.pack()
 
         # Botão de buscar
         search_btn = tk.Button(upload_frame, text="Buscar", bg="#a8d4f0", 
-                              command=self.select_video, width=10)
+                              command=self.select_video, width=10, font=("Poppins", 10, "bold"))
         search_btn.pack(pady=20)
 
         # Lista de vídeos (lado direito)
