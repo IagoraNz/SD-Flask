@@ -60,8 +60,9 @@ class VideoClientApp(tk.Tk):
         tk.Label(filter_frame, text="Selecionar Filtro", bg="#a8d4f0", 
                 font=("Poppins", 10, "bold")).pack(padx=10, pady=5)
         
+        # Atualizado para os filtros que existem no servidor: gray, pixelate e edges
         filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_name, 
-                                   values=["gray", "blur", "edge", "sharpen"], width=15)
+                                   values=["gray", "pixelate", "edges"], width=15)
         filter_combo.pack(padx=10, pady=(0, 10))
 
         # Frame central - área de upload e lista de vídeos
