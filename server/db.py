@@ -102,3 +102,8 @@ def get_video(video_id: str):
         r["urls"].setdefault(k, "")
 
     return r
+
+def delete_video_db(video_id: str):
+    with get_conn() as conn:
+        conn.execute('DELETE FROM videos WHERE id = ?', (video_id,))
+        conn.commit()

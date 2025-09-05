@@ -6,13 +6,13 @@ from datetime import datetime, timezone
 from flask import (
     Flask, request, jsonify, send_from_directory,
     abort, render_template_string, redirect, url_for,
-    render_template
+    render_template, flash
 )
 from dotenv import load_dotenv
 import cv2
 import tempfile
 
-from db import init_db, insert_video, list_videos, get_video
+from db import init_db, insert_video, list_videos, get_video, delete_video_db
 from processing import process_video
 from utils import now_parts, safe_ext, sha256sum, guess_mime
 
@@ -195,6 +195,77 @@ def save_meta_json(meta_path: Path, data: dict):
         json.dump(data, f, indent=4)
 
 
+def move_video_to_trash(video_id):
+    """
+    Move o vídeo para a pasta trash baseado no video_id.
+    Procura pela estrutura: videos/Y/M/D/video_id/
+    """
+    video = get_video(video_id)
+    if not video:
+        print("Vídeo não encontrado no banco de dados.")
+        return False
+
+    # Procura pelo diretório do vídeo na estrutura videos/Y/M/D/video_id
+    video_base_path = None
+    
+    # Primeiro tenta usar o path_original se estiver disponível
+    if "path_original" in video:
+        original_path = Path(video["path_original"])
+        # O path original é: videos/Y/M/D/video_id/original/video.ext
+        # Então o base_path é 2 níveis acima
+        potential_base = original_path.parent.parent
+        if potential_base.name == video_id and potential_base.exists():
+            video_base_path = potential_base
+    
+    # Se não encontrou pelo path_original, procura manualmente
+    if video_base_path is None:
+        print(f"Procurando diretório para video_id: {video_id}")
+        # Procura em todos os subdiretórios de videos/
+        for year_dir in VIDEOS.iterdir():
+            if not year_dir.is_dir():
+                continue
+            for month_dir in year_dir.iterdir():
+                if not month_dir.is_dir():
+                    continue
+                for day_dir in month_dir.iterdir():
+                    if not day_dir.is_dir():
+                        continue
+                    video_dir = day_dir / video_id
+                    if video_dir.exists() and video_dir.is_dir():
+                        video_base_path = video_dir
+                        break
+                if video_base_path:
+                    break
+            if video_base_path:
+                break
+    
+    if video_base_path is None:
+        print(f"Diretório do vídeo {video_id} não encontrado")
+        return False
+    
+    print(f"Encontrado diretório do vídeo: {video_base_path}")
+    
+    try:
+        # Move para a pasta trash
+        trash_path = TRASH / video_id
+        
+        # Se já existe na trash, remove primeiro
+        if trash_path.exists():
+            import shutil
+            shutil.rmtree(trash_path)
+        
+        # Garante que o diretório pai da trash existe
+        trash_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Move o diretório inteiro
+        video_base_path.rename(trash_path)
+        print(f"Vídeo movido para trash: {trash_path}")
+        return True
+        
+    except Exception as e:
+        print(f"Erro ao mover vídeo para trash: {e}")
+        return False
+
 # =====================================
 # Routes
 # =====================================
@@ -296,19 +367,62 @@ def view_video(video_id):
     """
     return render_template_string(html, v=video)
 
+@app.route("/delete_video/<video_id>", methods=["POST"])
+def delete_video(video_id):
+    try:
+        print(f"Tentando deletar vídeo: {video_id}")
+        
+        # Verifica se o vídeo existe no banco
+        video = get_video(video_id)
+        if not video:
+            print(f"Vídeo {video_id} não encontrado no banco de dados")
+            return jsonify({"success": False, "error": "Vídeo não encontrado"}), 404
+        
+        # Tenta mover para trash
+        success = move_video_to_trash(video_id)
+        
+        if success:
+            # Remove do banco de dados apenas se moveu com sucesso
+            delete_video_db(video_id)
+            print(f"Vídeo {video_id} deletado com sucesso")
+            return jsonify({"success": True, "message": "Vídeo deletado com sucesso"}), 200
+        else:
+            print(f"Falha ao mover vídeo {video_id} para trash")
+            return jsonify({"success": False, "error": "Não foi possível mover para trash"}), 500
+            
+    except Exception as e:
+        print(f"Erro inesperado ao deletar vídeo {video_id}: {e}")
+        return jsonify({"success": False, "error": f"Erro interno: {str(e)}"}), 500
 @app.route("/gallery", methods=["GET"])
 def gallery():
     videos = list_videos()
     html = """
     <html>
-    <head><title>Galeria</title></head>
+    <head>
+        <title>Galeria</title>
+        <script>
+        function deleteVideo(videoId, btn) {
+            if (!confirm('Tem certeza que deseja apagar este vídeo?')) return;
+            fetch('/delete_video/' + videoId, {method: 'POST'})
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.success) {
+                        btn.closest('li').remove();
+                    } else {
+                        alert('Erro ao apagar: ' + (data.error || ''));
+                    }
+                });
+        }
+        </script>
+    </head>
     <body>
         <h1>Galeria</h1>
         <ul>
         {% for v in videos %}
             <li>
                 <img src="{{v['urls']['thumb']}}" width="160"><br>
-                <a href="{{v['urls']['view']}}">Ver vídeo {{v['id']}}</a>
+                <a href="{{v['urls']['view']}}">Ver vídeo {{v['id']}}</a><br>
+                <button onclick="deleteVideo('{{v['id']}}', this)">Apagar</button>
             </li>
         {% endfor %}
         </ul>
