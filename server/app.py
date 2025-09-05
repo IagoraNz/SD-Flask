@@ -10,6 +10,7 @@ from flask import (
 )
 from dotenv import load_dotenv
 import cv2
+import tempfile
 
 from db import init_db, insert_video, list_videos, get_video
 from processing import process_video
@@ -82,6 +83,105 @@ def public_urls(video_id: str, ext: str, filter_name: str):
     }
 
 
+def save_original_video_properly(uploaded_file, original_path: Path):
+    """
+    Salva o vídeo original garantindo que não seja corrompido.
+    Usa OpenCV para reescrever o vídeo com codec compatível.
+    """
+    print(f"Salvando vídeo original: {original_path}")
+    
+    # Primeiro salva temporariamente o arquivo uploadado
+    with tempfile.NamedTemporaryFile(suffix='.tmp', delete=False) as temp_file:
+        temp_path = Path(temp_file.name)
+        uploaded_file.save(temp_path)
+        uploaded_file.seek(0)  # Reset para caso seja usado novamente
+    
+    try:
+        # Abre o arquivo temporário com OpenCV
+        cap = cv2.VideoCapture(str(temp_path))
+        if not cap.isOpened():
+            print("Falha ao abrir vídeo temporário, salvando diretamente...")
+            # Fallback: salva diretamente
+            uploaded_file.save(original_path)
+            return
+        
+        # Obter propriedades
+        fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        
+        print(f"Propriedades do original: {width}x{height}, {fps} FPS")
+        
+        # Se não conseguir obter dimensões, usa fallback
+        if width <= 0 or height <= 0:
+            ret, test_frame = cap.read()
+            if ret:
+                height, width = test_frame.shape[:2]
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            else:
+                print("Não foi possível ler frame, usando fallback...")
+                cap.release()
+                uploaded_file.save(original_path)
+                return
+        
+        # Garantir dimensões pares
+        width = width + (width % 2)
+        height = height + (height % 2)
+        
+        # Usar codec compatível para o original
+        fourcc = cv2.VideoWriter_fourcc(*'avc1')  # H.264
+        
+        original_path.parent.mkdir(parents=True, exist_ok=True)
+        out = cv2.VideoWriter(str(original_path), fourcc, fps, (width, height))
+        
+        # Se falhar, tenta MJPG
+        if not out.isOpened():
+            print("Falha com avc1, tentando MJPG...")
+            fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+            out = cv2.VideoWriter(str(original_path), fourcc, fps, (width, height))
+            
+            # Se ainda falhar, usa fallback
+            if not out.isOpened():
+                print("Falha com todos os codecs, usando fallback...")
+                cap.release()
+                uploaded_file.save(original_path)
+                return
+        
+        # Copia todos os frames
+        frame_count = 0
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            # Redimensionar se necessário
+            if frame.shape[:2] != (height, width):
+                frame = cv2.resize(frame, (width, height))
+            
+            out.write(frame)
+            frame_count += 1
+        
+        cap.release()
+        out.release()
+        
+        print(f"Vídeo original salvo com {frame_count} frames")
+        
+        # Verificar se foi criado corretamente
+        if not original_path.exists() or original_path.stat().st_size == 0:
+            print("Falha na reescrita, usando fallback...")
+            uploaded_file.save(original_path)
+    
+    except Exception as e:
+        print(f"Erro ao processar original: {e}, usando fallback...")
+        # Em caso de erro, salva diretamente
+        uploaded_file.save(original_path)
+    
+    finally:
+        # Remove arquivo temporário
+        if temp_path.exists():
+            temp_path.unlink()
+
+
 def generate_thumbnail(video_path: Path, thumb_path: Path):
     cap = cv2.VideoCapture(str(video_path))
     ret, frame = cap.read()
@@ -101,7 +201,7 @@ def save_meta_json(meta_path: Path, data: dict):
 
 @app.route("/upload", methods=["POST"])
 def upload_video():
-    file = request.files.get("video")  # trocar de "file" para "video"
+    file = request.files.get("video")
     filter_name = request.form.get("filter", "gray")
 
     if not file:
@@ -114,37 +214,52 @@ def upload_video():
     video_id = str(uuid.uuid4().hex)
     paths = build_paths(video_id, ext, filter_name)
 
-    # Salva original
-    file.save(paths["original"])
+    print(f"Iniciando upload do vídeo {video_id} com filtro {filter_name}")
 
-    # Processa vídeo
-    process_video(
-        paths["original"],
-        paths["processed"],
-        filter_name,
-        paths["thumb_jpg"],
-        paths["preview_gif"]
-    )
+    try:
+        # Salva o original de forma segura
+        save_original_video_properly(file, paths["original"])
+        
+        # Verifica se o original foi salvo
+        if not paths["original"].exists():
+            return jsonify({"error": "Falha ao salvar vídeo original"}), 500
+        
+        print(f"Original salvo: {paths['original']} ({paths['original'].stat().st_size} bytes)")
 
-    # Gera thumb
-    generate_thumbnail(paths["processed"], paths["thumb_jpg"])
+        # Processa vídeo (aplicando filtro)
+        processing_result = process_video(
+            paths["original"],
+            paths["processed"],
+            filter_name,
+            paths["thumb_jpg"],
+            paths["preview_gif"]
+        )
+        
+        print(f"Vídeo processado: {paths['processed']} ({paths['processed'].stat().st_size} bytes)")
 
-    # Metadados
-    meta = {
-        "id": video_id,
-        "original_name": file.filename,
-        "ext": ext,
-        "filter": filter_name,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "path_original": str(paths["original"]),
-        "path_processed": str(paths["processed"]),
-        "urls": public_urls(video_id, ext, filter_name)  # ✅ já dict
-    }
+        # Metadados
+        meta = {
+            "id": video_id,
+            "original_name": file.filename,
+            "ext": ext,
+            "filter": filter_name,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "path_original": str(paths["original"]),
+            "path_processed": str(paths["processed"]),
+            "urls": public_urls(video_id, ext, filter_name),
+            **processing_result  # Adiciona fps, width, height, etc.
+        }
 
-    save_meta_json(paths["meta_json"], meta)
-    insert_video(meta)
+        save_meta_json(paths["meta_json"], meta)
+        insert_video(meta)
 
-    return jsonify(meta), 200
+        print(f"Upload concluído com sucesso: {video_id}")
+        return jsonify(meta), 200
+    
+    except Exception as e:
+        print(f"Erro durante upload: {e}")
+        return jsonify({"error": f"Erro ao processar vídeo: {str(e)}"}), 500
+
 
 @app.route("/videos", methods=["GET"])
 def api_list_videos():
