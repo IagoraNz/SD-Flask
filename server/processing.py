@@ -115,9 +115,8 @@ def process_video(src_path: Path, dst_path: Path, filter_name: str, thumb_jpg: P
                 processed = cv2.resize(processed, (width, height))
             
             # Escrever frame
-            success = out.write(processed)
-            if success:
-                processed_frames += 1
+            out.write(processed)
+            processed_frames += 1
             
             # Salvar thumbnail do primeiro frame processado
             if not saved_thumb:
