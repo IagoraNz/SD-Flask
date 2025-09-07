@@ -61,10 +61,10 @@ SD-FLASK/
 └── 📘 README.md
 ```
 
-## ⚙️ Comandos Fundamentais
+## ⚙️ Comandos fundamentais
 
 ### ▶️ Executando o modelo cliente-servidor
-Rode preferencialmente o servidor primeiro que o cliente.
+Rode preferencialmente o servidor primeiro que o cliente. Além disso, certifique-se de que possui as tecnologias necessárias instaladas.
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -110,3 +110,4 @@ python app.py
 <img width="600" height="338" alt="Histórico de vídeos" src="https://github.com/user-attachments/assets/2a5b24fb-6163-47f6-b139-4e07b96df1c1" />
 
 9. Aproveite a aplicação!
+
