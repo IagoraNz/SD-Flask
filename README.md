@@ -1,6 +1,7 @@
 # 🎬 SD-Flask – Sistema Cliente/Servidor em Camadas
 
 Este projeto implementa um sistema **cliente/servidor em três camadas** capaz de **enviar, processar e armazenar vídeos** de forma organizada.  
+
 A ideia é permitir que um cliente gráfico envie vídeos para o servidor, que aplica filtros com **OpenCV**, armazena os resultados e mantém **metadados em SQLite**.  
 
 ## 📌 Funcionalidades
@@ -110,4 +111,5 @@ python app.py
 <img width="600" height="338" alt="Histórico de vídeos" src="https://github.com/user-attachments/assets/2a5b24fb-6163-47f6-b139-4e07b96df1c1" />
 
 9. Aproveite a aplicação!
+
 
